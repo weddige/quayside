@@ -1,27 +1,55 @@
 import logging
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import docker
 
 logger = logging.getLogger(__name__)
 
 
+class MappedArgument:
+    def __init__(self, argument, value=None, func=lambda a: a) -> None:
+        self._argument = argument
+        self._value = value
+        self._func = func
+
+    def __call__(self, value: str) -> "MappedArgument":
+        return MappedArgument(self._argument, value, self._func)
+
+    def map(self):
+        return (self._argument, self._func(self._value))
+
+
 class QuaysideApp:
-    def __init__(self, /, container, cwd=None) -> None:
+    def __init__(self, /, container, mounts=[], mapped_arguments={}, cwd=None) -> None:
         self._client = docker.from_env()
         self._container = container
+        self._mounts = mounts
         self._cwd = cwd
+        self._arguments = mapped_arguments
 
     def run(self, *args, **kwargs):
         mounts = []
         if self._cwd:
-            logger.debug(f'Mount {Path(".").absolute()} at {self._cwd}')
-            mounts.append(docker.types.Mount(self._cwd, str(Path(".").absolute()), type="bind"))
-        else:
-            logger.debug(f"Do not mount CWD.")
-        container = self._client.containers.run(self._container, args, mounts=mounts, detach=True)
+            source = str(Path(".").absolute())
+            logger.debug(f"Mount {source} at {self._cwd}")
+            mounts.append(docker.types.Mount(self._cwd, source, type="bind"))
+        for mount in self._mounts:
+            source = str(Path(mount["source"]).absolute())
+            target = mount["target"]
+            logger.debug(f"Mount {source} at {target}")
+            mounts.append(docker.types.Mount(target, source, type="bind"))
+        command = list(args)
+        for arg in kwargs.get("mapped_args", []) or []:
+            command.extend(arg.map())
+        container = self._client.containers.run(self._container, command, mounts=mounts, detach=True)
         for line in container.logs(stream=True):
             print(line.strip().decode())
 
     def add_arguments(self, parser):
-        pass
+        for argument in self._arguments.get("cwd", []):
+            parser.add_argument(
+                argument,
+                type=MappedArgument(argument, func=lambda path: str(PurePosixPath(self._cwd, path))),
+                dest="mapped_args",
+                action="append",
+            )
