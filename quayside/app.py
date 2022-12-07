@@ -41,7 +41,7 @@ class QuaysideApp:
         command = list(args)
         for arg in kwargs.get("mapped_args", []) or []:
             command.extend(arg.map())
-        container = self._client.containers.run(self._container, command, mounts=mounts, detach=True)
+        container = self._client.containers.run(self._container, command, mounts=mounts, detach=True, auto_remove=True)
         for line in container.logs(stream=True):
             print(line.strip().decode())
 
