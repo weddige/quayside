@@ -1,10 +1,11 @@
-import logging
 import argparse
+import logging
 from pathlib import Path
+
 import yaml
 
-from quayside.cli import add_verbosity_argument, configure_logger
 from quayside.app import QuaysideApp
+from quayside.cli import add_verbosity_argument, configure_logger
 
 logger = logging.getLogger(__name__)
 
@@ -34,5 +35,6 @@ for cmd, app in apps.items():
 args, unknown_args = parser.parse_known_args()
 configure_logger(args)
 
-app = QuaysideApp(config[args.cmd]["container"])
+logger.debug(f"Run {args.cmd} with {unknown_args}")
+app = apps[args.cmd]
 app.run(*unknown_args, **vars(args))

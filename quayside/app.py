@@ -1,5 +1,9 @@
-import docker
+import logging
 from pathlib import Path
+
+import docker
+
+logger = logging.getLogger(__name__)
 
 
 class QuaysideApp:
@@ -11,8 +15,12 @@ class QuaysideApp:
     def run(self, *args, **kwargs):
         mounts = []
         if self._cwd:
-            logger.debug(f'Mount {Path(".")} at {self._cwd}')
-            mounts.append(docker.types.Mount(self._cwd, str(Path("."))))
+            logger.debug(f'Mount {Path(".").absolute()} at {self._cwd}')
+            mounts.append(
+                docker.types.Mount(self._cwd, str(Path(".").absolute()), type="bind")
+            )
+        else:
+            logger.debug(f"Do not mount CWD.")
         container = self._client.containers.run(
             self._container, args, mounts=mounts, detach=True
         )
