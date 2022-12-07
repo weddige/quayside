@@ -16,14 +16,10 @@ class QuaysideApp:
         mounts = []
         if self._cwd:
             logger.debug(f'Mount {Path(".").absolute()} at {self._cwd}')
-            mounts.append(
-                docker.types.Mount(self._cwd, str(Path(".").absolute()), type="bind")
-            )
+            mounts.append(docker.types.Mount(self._cwd, str(Path(".").absolute()), type="bind"))
         else:
             logger.debug(f"Do not mount CWD.")
-        container = self._client.containers.run(
-            self._container, args, mounts=mounts, detach=True
-        )
+        container = self._client.containers.run(self._container, args, mounts=mounts, detach=True)
         for line in container.logs(stream=True):
             print(line.strip().decode())
 
