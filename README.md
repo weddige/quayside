@@ -6,7 +6,7 @@ This is where quayside comes in. The goal of this app is to provide a simple wra
 
 ## Example usage
 
-An example of a too, that is offered as a container is [sslyze](https://github.com/nabla-c0d3/sslyze).
+An example of a tool, that is offered as a container is [sslyze](https://github.com/nabla-c0d3/sslyze).
 
 A common call would look like this:
 
@@ -33,7 +33,7 @@ sslyze:
 Now we can call sslyze like this:
 
 ```
-quayside sslyze --json_out=result.json --reneg www.google.com
+quayside sslyze --json_out=result.json www.google.com
 ```
 
 The current working directory is automatically mounted at `/data/` and paths that are passed to one of the *mapped arguments* are interpreted relative to that folder.
