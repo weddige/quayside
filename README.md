@@ -14,7 +14,10 @@ A common call would look like this:
 docker run --rm -v "$(pwd):/data/" nablac0d3/sslyze:5.0.0 www.google.com --json_out /data/result.json
 ```
 
-To do the same via quayside we need to define sslyze in a file called `quayside.yaml`:
+To do the same via quayside we need to define sslyze in the quayside configuration. Quayside is searching for its configuration at the following locations:
+
+ * `./quayside.yaml`
+ * `~/.quayside.yaml`
 
 ```yaml
 sslyze:
