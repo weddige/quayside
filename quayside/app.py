@@ -20,12 +20,14 @@ class MappedArgument:
 
 
 class QuaysideApp:
-    def __init__(self, /, container, mounts=[], mapped_arguments={}, cwd=None) -> None:
+    def __init__(self, /, container, mounts=[], mapped_arguments={}, cwd=None, cli=None, environment={}) -> None:
         self._client = docker.from_env()
         self._container = container
         self._mounts = mounts
         self._cwd = cwd
         self._arguments = mapped_arguments
+        self._cli = cli
+        self._environment = environment
 
     def run(self, *args, **kwargs):
         mounts = []
@@ -41,7 +43,15 @@ class QuaysideApp:
         command = list(args)
         for arg in kwargs.get("mapped_args", []) or []:
             command.extend(arg.map())
-        container = self._client.containers.run(self._container, command, mounts=mounts, detach=True, auto_remove=True)
+        environment = self._environment.copy()
+        if self._cli:
+            # Pass CLI args via environment variable
+            environment[self._cli] = " ".join(command)
+            # Do not pass CLI args as command
+            command = None
+        container = self._client.containers.run(
+            self._container, command, environment=environment, mounts=mounts, detach=True, auto_remove=True
+        )
         for line in container.logs(stream=True):
             print(line.strip().decode())
 
