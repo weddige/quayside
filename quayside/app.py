@@ -1,13 +1,15 @@
+import argparse
 import logging
 from pathlib import Path, PurePosixPath
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
-import docker
+import docker  # type: ignore
 
 logger = logging.getLogger(__name__)
 
 
 class MappedArgument:
-    def __init__(self, argument, value=None, func=lambda a: a) -> None:
+    def __init__(self, argument: str, value: Optional[str] = None, func: Callable[[str], str] = lambda a: a) -> None:
         self._argument = argument
         self._value = value
         self._func = func
@@ -15,12 +17,23 @@ class MappedArgument:
     def __call__(self, value: str) -> "MappedArgument":
         return MappedArgument(self._argument, value, self._func)
 
-    def map(self):
+    def map(self) -> Tuple[str, str]:
+        if not self._value:
+            raise RuntimeError("Value of MappedArgument is not initialized!")
         return (self._argument, self._func(self._value))
 
 
 class QuaysideApp:
-    def __init__(self, /, container, mounts=[], mapped_arguments={}, cwd=None, cli=None, environment={}) -> None:
+    def __init__(
+        self,
+        /,
+        container: str,
+        mounts: List[Dict[str, str]] = [],
+        mapped_arguments: Dict[str, List[str]] = {},
+        cwd: Optional[str] = None,
+        cli: Optional[str] = None,
+        environment: Dict[str, str] = {},
+    ) -> None:
         self._client = docker.from_env()
         self._container = container
         self._mounts = mounts
@@ -29,7 +42,7 @@ class QuaysideApp:
         self._cli = cli
         self._environment = environment
 
-    def run(self, *args, **kwargs):
+    def run(self, *args: str, **kwargs: Any) -> None:
         mounts = []
         if self._cwd:
             source = str(Path(".").absolute())
@@ -40,7 +53,8 @@ class QuaysideApp:
             target = mount["target"]
             logger.debug(f"Mount {source} at {target}")
             mounts.append(docker.types.Mount(target, source, type="bind"))
-        command = list(args)
+        command: Optional[List[str]] = list(args)
+        assert isinstance(command, list)
         for arg in kwargs.get("mapped_args", []) or []:
             command.extend(arg.map())
         environment = self._environment.copy()
@@ -50,16 +64,20 @@ class QuaysideApp:
             # Do not pass CLI args as command
             command = None
         container = self._client.containers.run(
-            self._container, command, environment=environment, mounts=mounts, detach=True, auto_remove=True
+            self._container, command and None, environment=environment, mounts=mounts, detach=True, auto_remove=True
         )
         for line in container.logs(stream=True):
             print(line.strip().decode())
 
-    def add_arguments(self, parser):
-        for argument in self._arguments.get("cwd", []):
-            parser.add_argument(
-                argument,
-                type=MappedArgument(argument, func=lambda path: str(PurePosixPath(self._cwd, path))),
-                dest="mapped_args",
-                action="append",
-            )
+    def add_arguments(self, parser: argparse.ArgumentParser) -> None:
+        if arguments := self._arguments.get("cwd", []):
+            if not self._cwd:
+                raise RuntimeError("Mapped arguments are only possible if cwd is defined!")
+            cwd = self._cwd
+            for argument in arguments:
+                parser.add_argument(
+                    argument,
+                    type=MappedArgument(argument, func=lambda path: str(PurePosixPath(cwd, path))),
+                    dest="mapped_args",
+                    action="append",
+                )

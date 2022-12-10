@@ -10,7 +10,7 @@ from quayside.cli import add_verbosity_argument, configure_logger
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main() -> None:
     # Find and load config
     for path in [
         Path("./quayside.yaml"),
@@ -18,10 +18,10 @@ def main():
         Path(__file__).parent.joinpath("default.yaml"),
     ]:
         if path.exists():
-            config = path.absolute()
-            logger.debug(f"Found config file at {config}")
+            config_file = path.absolute()
+            logger.debug(f"Found config file at {config_file}")
             break
-    config = yaml.safe_load(config.open())
+    config = yaml.safe_load(config_file.open())
 
     # Setup apps
     apps = {key: QuaysideApp(**val) for key, val in config.items()}
