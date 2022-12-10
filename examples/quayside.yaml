@@ -1,0 +1,17 @@
+hello:
+  container: hello-world
+sslyze:
+  container: nablac0d3/sslyze:5.0.0
+  cwd: /data/
+  mapped_arguments:
+    cwd:
+      - "--json_out"
+      - "--targets_in"
+      - "--cert"
+      - "--key"
+      - "--keyform"
+      - "--pass"
+codeql:
+  container: mcr.microsoft.com/cstsectools/codeql-container
+  cli: CODEQL_CLI_ARGS 
+  cwd: /opt/cwd/
