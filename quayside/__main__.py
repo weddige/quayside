@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     # Find and load config
     for path in [
-        Path("./quayside.yaml"),
-        Path("~/.quayside.yaml"),
+        Path("quayside.yaml"),
+        Path.home().joinpath(".quayside.yaml"),
         Path(__file__).parent.joinpath("default.yaml"),
     ]:
         if path.exists():
