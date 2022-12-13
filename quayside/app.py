@@ -64,7 +64,7 @@ class QuaysideApp:
             # Do not pass CLI args as command
             command = None
         container = self._client.containers.run(
-            self._container, command and None, environment=environment, mounts=mounts, detach=True, auto_remove=True
+            self._container, command or None, environment=environment, mounts=mounts, detach=True, auto_remove=True
         )
         for line in container.logs(stream=True):
             print(line.strip().decode())
